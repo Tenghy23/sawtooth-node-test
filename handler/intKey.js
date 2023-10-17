@@ -2,6 +2,7 @@ const { TransactionHandler } = require('sawtooth-sdk-js/processor/handler')
 const { InvalidTransaction, InternalError } = require('sawtooth-sdk-js/processor/exceptions')
 const crypto = require('crypto')
 
+// this is the sample intKey handler for learning purposes
 
 const _hash = (x) =>
     crypto.createHash('sha512').update(x).digest('hex').toLowerCase()

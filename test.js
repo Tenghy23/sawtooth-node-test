@@ -6,8 +6,78 @@ const { CryptoFactory, createContext } = require('sawtooth-sdk-js/signing');
 const { Secp256k1PrivateKey } = require('sawtooth-sdk-js/signing/secp256k1');
 const axios = require('axios');
 const protobuf = require("sawtooth-sdk-js/protobuf");
+const bodyParser = require('body-parser');
+const express = require('express');
+const app = express();
 
-const createPrivateKey = () => {
+// Middleware to parse JSON data
+app.use(express.json());
+const port = process.env.PORT || 3002;
+
+
+
+const privateKeyHexStr = createPrivateKey();
+
+// create instance of private key w internal class
+const privateKey = new Secp256k1PrivateKey(Buffer.from(privateKeyHexStr));
+const context = createContext('secp256k1');
+
+// create a new signer to sign the payload
+const signer = new CryptoFactory(context).newSigner(privateKey);
+
+// payload -> Transaction -> TransactionList -> Batch -> BatchList -> Byte -> REST-API
+
+app.get('/health', (req, res) => {
+    res.json({
+        message: 'Running'
+    })
+})
+
+app.post('/send-payload', async (req, res) => {
+    try {
+       
+        const payload = seedSampleData(req);
+        const payloadBytes = Buffer.from(payload.toString('hex'))
+
+        const transactionHeaderBytes1 = createTransactionHeader(signer, payloadBytes);
+        const transaction1 = createTransaction(transactionHeaderBytes1, signer, payloadBytes);
+        const transactionList1 = [transaction1];
+        const batch1 = createBatch(signer, transactionList1);
+        const batchList1 = [batch1];
+        const batchListBytes1 = createBatchList(batchList1);
+        
+        console.log(batchListBytes1.toString());
+
+        // Send the payload to the Sawtooth network
+        const response = await sendPayloadToSawtooth(batchList1);
+  
+        res.json({ message: 'Payload sent successfully', response });
+      
+    } catch (error) {
+        res.status(500).json({ 
+            'Error name:': error.name,
+            'Error message:': error.message,
+            'Error stack trace:': error.stack,
+        });
+    }
+  });
+  
+
+async function sendPayloadToSawtooth(batchList) {
+    // Make an HTTP POST request to the Sawtooth REST API
+    const sawtoothRestApiUrl = 'http://localhost:8008/batches'; 
+    // const sawtoothRestApiUrl = 'http://sawtooth-rest-api-default-0:8008/batches'; // Update with your Sawtooth API URL
+
+    const response = await axios.post(sawtoothRestApiUrl, batchList, {
+        headers: { 'Content-Type': 'application/octet-stream' },
+        // headers: { 'Content-Type': 'application/json' },
+    });
+
+    return response.data;
+}
+  
+// create private key
+function createPrivateKey() {
     // generate message to sign
     // message should have 32-byte length, if you have some other length you can hash message
     // for example `msg = sha256(rawMessage)`
@@ -29,82 +99,13 @@ const createPrivateKey = () => {
     console.log(secp256k1.ecdsaVerify(sigObj.signature, msg, pubKey))
     // => true
 
-    return privKey.toString('hex')
+    return privKey
 }
 
-const privateKeyHexStr = createPrivateKey();
+// create sample data from req
+function seedSampleData(req) {
 
-// create instance of private key w internal class
-const privateKey = new Secp256k1PrivateKey(Buffer.From(privateKeyHexStr));
-
-const context = createContext('secp256k1');
-
-// create a new signer to sign the payload
-const signer = new CryptoFactory(context).newSigner(privateKey);
-
-
-
-// payload -> Transaction -> TransactionList -> Batch -> BatchList -> Byte -> REST-API
-var payload = seedSampleData();
-const payloadBytes = Buffer.from(payload, 'utf8')
-
-const transactionHeaderBytes = protobuf.TransactionHeader.encode({
-    familyName: 'Boeing 787',
-    familyVersion: '1.0.0',
-    inputs: [],
-    outputs: [],
-    signerPublicKey: signer.getPublicKey().asHex(),
-    batcherPublicKey: signer.getPublicKey().asHex(),
-    nonce: `${Math.random()}`,
-    dependencies: [],
-    payloadSha512: createHash('sha512').update(payloadBytes).digest('hex')
-}).finish();
-
-const transaction = protobuf.TransactionHeader.encode({
-    header: transactionHeaderBytes,
-    headerSignature: signer.sign(transactionHeaderBytes),
-    payload: payloadBytes
-}).finish();
-
-const transactionList = [transaction];
-
-const batchHeaderBytes = protobuf.TransactionHeader.encode({
-    signerPublicKey: signer.getPublicKey().asHex(),
-    transactionIds: transactionList.map(t => t.headerSignature)
-}).finish();
-
-const batch = protobuf.Batch.create({
-    header: batchHeaderBytes,
-    headerSignature: signer.sign(batchHeaderBytes),
-    transactions: transactionList
-}).finish();
-
-const batchList = [batch];
-
-const batchListBytes = protobuf.BatchList.encode({
-    batches: batchList
-}).finish();
-
-console.log(batchListBytes.toString());
-
-// forward 
-// go to localhost:8008/state to see the output 
-axios.post('http://localhost:8008/batches', {}, {
-    headers: {
-        'Content-Type': 'application/octet-stream'
-    },
-    data: batchListBytes
-}).then((res) => {
-    console.log(`response name: ${res.name}`)
-    console.log(`response data: ${res.data}`)
-}).catch((err) => {
-    console.log(`error name: ${err.name}`)
-    console.log(`error data: ${err.data}`)
-})
-
-
-//create sample data from req
-async function seedSampleData() {
+    const { name, job } = req.body;
 
     // seed some sample data into the payload
     const offsetInHours = 8;
@@ -118,13 +119,67 @@ async function seedSampleData() {
     
     // Create a payload object
     const payload = {
-      name: "TEST NAME",
-      job: "TEST JOB",
-      dateTimeStarted,
-      dateTimeEnded,
-      hours
+      name: name,
+      job: job,
+      dateTimeStarted: dateTimeStarted,
+      dateTimeEnded: dateTimeEnded,
+      hoursTaken: hours
     };
   
     return payload;
   }
     
+// 1. create txn header bytes 
+const createTransactionHeader = (signer, payloadBytes) => {
+    return protobuf.TransactionHeader.encode({
+        familyName: 'Boeing 787',
+        familyVersion: '1.0.0',
+        inputs: [],
+        outputs: [],
+        signerPublicKey: signer.getPublicKey().asHex(),
+        batcherPublicKey: signer.getPublicKey().asHex(),
+        nonce: `${Math.random()}`,
+        dependencies: [],
+        payloadSha512: createHash('sha512').update(payloadBytes).digest('hex')
+    }).finish();
+}
+
+// 2. create txn 
+const createTransaction = (transactionHeaderBytes, signer, payloadBytes) => {
+    return protobuf.TransactionHeader.encode({
+        header: transactionHeaderBytes,
+        headerSignature: signer.sign(transactionHeaderBytes),
+        payload: payloadBytes
+    }).finish();
+}
+
+// 3. create txn list 
+// const transactionList = [transaction];
+
+// 4. create batch with batch header info
+const createBatch = (signer, transactionList) => {
+    const batchHeaderBytes = protobuf.TransactionHeader.encode({
+        signerPublicKey: signer.getPublicKey().asHex(),
+        transactionIds: transactionList.map(t => t.headerSignature)
+    }).finish();
+
+    return protobuf.Batch.create({
+        header: batchHeaderBytes,
+        headerSignature: signer.sign(batchHeaderBytes),
+        transactions: transactionList
+    });
+}
+
+// 5. create batch list
+// const batchList = [batch];
+
+// 6. create batch list bytes
+const createBatchList = (batchList) => {
+    return protobuf.BatchList.encode({
+        batches: batchList
+    }).finish();
+}
+
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
