@@ -33,12 +33,18 @@ const createPrivateKey = () => {
 }
 
 const privateKeyHexStr = createPrivateKey();
-const privateKey = new Secp256k1PrivateKey(privateKeyHexStr);
+
+// create instance of private key w internal class
+const privateKey = new Secp256k1PrivateKey(Buffer.From(privateKeyHexStr));
+
 const context = createContext('secp256k1');
+
+// create a new signer to sign the payload
 const signer = new CryptoFactory(context).newSigner(privateKey);
 
-// payload -> Transaction -> TransactionList -> Batch -> BatchList -> Byte -> REST-API
 
+
+// payload -> Transaction -> TransactionList -> Batch -> BatchList -> Byte -> REST-API
 var payload = seedSampleData();
 const payloadBytes = Buffer.from(payload, 'utf8')
 

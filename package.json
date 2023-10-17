@@ -4,8 +4,9 @@
   "description": "A sawtooth tutorial walkthrough",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "contract": "node transaction-processor.js",
+    "start": "node main.js",
+    "dev": "nodemon main.js"
   },
   "author": "hy",
   "license": "ISC",
