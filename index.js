@@ -1,7 +1,12 @@
 const { TransactionProcessor } = require('sawtooth-sdk-js/processor');
+const IntkeyHandler = require('./handler/intekey.js');
 
 const VALIDATOR_URL = 'tcp://localhost:4004'
 const transactionProcessor = new TransactionProcessor(VALIDATOR_URL)
+
+// add all transaction handlers
+transactionProcessor.addHandler(new IntkeyHandler())
+
 
 transactionProcessor.start();
 
