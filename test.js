@@ -45,6 +45,11 @@ app.post('/send-payload', async (req, res) => {
         const batch1 = createBatch(signer, transactionList1);
         const batchListBytes1 = createBatchList(batch1);
         
+        console.log("transaction List 1")
+        console.log(transactionList1.toString());
+        console.log("batch 1")
+        console.log(batch1.toString());
+        console.log("batch list 1")
         console.log(batchListBytes1.toString());
 
         // Send the payload to the Sawtooth network
