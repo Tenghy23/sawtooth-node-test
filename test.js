@@ -43,13 +43,12 @@ app.post('/send-payload', async (req, res) => {
         const transaction1 = createTransaction(transactionHeaderBytes1, signer, payloadBytes);
         const transactionList1 = [transaction1];
         const batch1 = createBatch(signer, transactionList1);
-        const batchList1 = [batch1];
-        const batchListBytes1 = createBatchList(signer, batchList1);
+        const batchListBytes1 = createBatchList(batch1);
         
         console.log(batchListBytes1.toString());
 
         // Send the payload to the Sawtooth network
-        const response = await sendPayloadToSawtooth(batchList1);
+        const response = await sendPayloadToSawtooth(batchListBytes1);
   
         res.json({ message: 'Payload sent successfully', response });
       
@@ -183,8 +182,8 @@ const createBatch = (signer, transactionList) => {
 // const batchList = [batch];
 
 // 6. create batch list bytes
-const createBatchList = (signer, batchList) => {
-    return protobuf.BatchList.encode(batchList).finish();
+const createBatchList = (batch) => {
+    return protobuf.BatchList.encode({ batches: batch }).finish();
 }
 
 app.listen(port, () => {
