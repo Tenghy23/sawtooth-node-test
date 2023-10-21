@@ -37,14 +37,14 @@ app.post('/send-payload', async (req, res) => {
     try {
        
         const payload = seedSampleData(req);
-        const payloadBytes = Buffer.from(payload.toString('hex'))
+        const payloadBytes = Buffer.from(JSON.stringify(payload), 'utf8');
 
         const transactionHeaderBytes1 = createTransactionHeader(signer, payloadBytes);
         const transaction1 = createTransaction(transactionHeaderBytes1, signer, payloadBytes);
         const transactionList1 = [transaction1];
         const batch1 = createBatch(signer, transactionList1);
         const batchList1 = [batch1];
-        const batchListBytes1 = createBatchList(batchList1);
+        const batchListBytes1 = createBatchList(signer, batchList1);
         
         console.log(batchListBytes1.toString());
 
@@ -71,7 +71,11 @@ async function sendPayloadToSawtooth(batchList) {
     const response = await axios.post(sawtoothRestApiUrl, batchList, {
         headers: { 'Content-Type': 'application/octet-stream' },
         // headers: { 'Content-Type': 'application/json' },
-    });
+    }).then((res) => {
+        console.log(res.data);
+    }).catch((err) => {
+        console.log(err.response);
+    })
 
     return response.data;
 }
@@ -126,16 +130,21 @@ function seedSampleData(req) {
       hoursTaken: hours
     };
   
-    return payload;
+    return JSON.stringify(payload);
   }
     
 // 1. create txn header bytes 
 const createTransactionHeader = (signer, payloadBytes) => {
+
+    const addressData = 'Boeing 787' + '1.0.0';
+    const hash = createHash('sha256').update(addressData).digest('hex');
+    const address = hash.slice(0, 64);
+
     return protobuf.TransactionHeader.encode({
         familyName: 'Boeing 787',
         familyVersion: '1.0.0',
-        inputs: [],
-        outputs: [],
+        inputs: [address],
+        outputs: [address],
         signerPublicKey: signer.getPublicKey().asHex(),
         batcherPublicKey: signer.getPublicKey().asHex(),
         nonce: `${Math.random()}`,
@@ -146,11 +155,11 @@ const createTransactionHeader = (signer, payloadBytes) => {
 
 // 2. create txn 
 const createTransaction = (transactionHeaderBytes, signer, payloadBytes) => {
-    return protobuf.TransactionHeader.encode({
+    return protobuf.Transaction.create({
         header: transactionHeaderBytes,
         headerSignature: signer.sign(transactionHeaderBytes),
         payload: payloadBytes
-    }).finish();
+    });
 }
 
 // 3. create txn list 
@@ -158,7 +167,7 @@ const createTransaction = (transactionHeaderBytes, signer, payloadBytes) => {
 
 // 4. create batch with batch header info
 const createBatch = (signer, transactionList) => {
-    const batchHeaderBytes = protobuf.TransactionHeader.encode({
+    const batchHeaderBytes = protobuf.BatchHeader.encode({
         signerPublicKey: signer.getPublicKey().asHex(),
         transactionIds: transactionList.map(t => t.headerSignature)
     }).finish();
@@ -174,10 +183,8 @@ const createBatch = (signer, transactionList) => {
 // const batchList = [batch];
 
 // 6. create batch list bytes
-const createBatchList = (batchList) => {
-    return protobuf.BatchList.encode({
-        batches: batchList
-    }).finish();
+const createBatchList = (signer, batchList) => {
+    return protobuf.BatchList.encode(batchList).finish();
 }
 
 app.listen(port, () => {
