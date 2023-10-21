@@ -18,21 +18,14 @@ version: "2.1"
 services:
 
   settings-tp:
-    image: hyperledger/sawtooth-settings-tp:chime
+    image: hyperledger/sawtooth-settings-tp:latest
     container_name: sawtooth-settings-tp-default
     depends_on:
       - validator
     entrypoint: settings-tp -vv -C tcp://validator:4004
 
-  intkey-tp-python:
-    image: hyperledger/sawtooth-intkey-tp-python:chime
-    container_name: sawtooth-intkey-tp-python-default
-    depends_on:
-      - validator
-    entrypoint: intkey-tp-python -vv -C tcp://validator:4004
-
   validator:
-    image: hyperledger/sawtooth-validator:chime
+    image: hyperledger/sawtooth-validator:latest
     container_name: sawtooth-validator-default
     expose:
       - 4004
@@ -56,15 +49,8 @@ services:
           --bind consensus:tcp://eth0:5050 \
         \""
 
-  devmode-engine:
-    image: hyperledger/sawtooth-devmode-engine-rust:chime
-    container_name: sawtooth-devmode-engine-rust-default
-    depends_on:
-      - validator
-    entrypoint: devmode-engine-rust -C tcp://validator:5050
-
   rest-api:
-    image: hyperledger/sawtooth-rest-api:chime
+    image: hyperledger/sawtooth-rest-api:latest
     container_name: sawtooth-rest-api-default
     ports:
       - "8008:8008"
@@ -73,7 +59,7 @@ services:
     entrypoint: sawtooth-rest-api -C tcp://validator:4004 --bind rest-api:8008
 
   shell:
-    image: hyperledger/sawtooth-shell:chime
+    image: hyperledger/sawtooth-shell:latest
     container_name: sawtooth-shell-default
     depends_on:
       - rest-api

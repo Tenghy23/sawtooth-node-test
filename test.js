@@ -43,7 +43,8 @@ app.post('/send-payload', async (req, res) => {
         const transaction1 = createTransaction(transactionHeaderBytes1, signer, payloadBytes);
         const transactionList1 = [transaction1];
         const batch1 = createBatch(signer, transactionList1);
-        const batchListBytes1 = createBatchList(batch1);
+        const batchList1 = [batch1];
+        const batchListBytes1 = createBatchList(batchList1);
         
         console.log("transaction List 1")
         console.log(transactionList1.toString());
@@ -187,8 +188,8 @@ const createBatch = (signer, transactionList) => {
 // const batchList = [batch];
 
 // 6. create batch list bytes
-const createBatchList = (batch) => {
-    return protobuf.BatchList.encode({ batches: batch }).finish();
+const createBatchList = (batchList) => {
+    return protobuf.BatchList.encode({ batches: batchList }).finish();
 }
 
 app.listen(port, () => {
