@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Include Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <title>Aircraft Maintenance Form</title>
+  </head>
+  <body>
+    <div class="container mt-5 mb-5">
+      <h1 class="mb-4">Aircraft Maintenance Registration Form</h1>
+      <form id="maintenanceForm">
+        <div class="form-group">
+          <label for="date">Date:</label>
+          <input
+            type="date"
+            class="form-control"
+            id="date"
+            name="date"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="aircraftID">Aircraft ID:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="aircraftID"
+            name="aircraftID"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="makeModel">Aircraft Make & Model:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="makeModel"
+            name="makeModel"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="owner">Aircraft Owner:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="owner"
+            name="owner"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="mechanic">Mechanic:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="mechanic"
+            name="mechanic"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="station">Authorized Repair Station:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="station"
+            name="station"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description of Maintenance:</label>
+          <textarea
+            class="form-control"
+            id="description"
+            name="description"
+            rows="4"
+            required
+          ></textarea>
+        </div>
+
+        <div id="parts" class="m-3">
+          <div class="part">
+            <label for="partSupplier">Part Supplier:</label>
+            <input
+              type="text"
+              class="form-control"
+              name="partSupplier[]"
+              required
+            />
+
+            <label for="partTrackingID">Part Tracking ID:</label>
+            <input
+              type="text"
+              class="form-control"
+              name="partTrackingID[]"
+              required
+            />
+
+            <button type="button" class="btn btn-danger removePart">
+              Remove Part
+            </button>
+            <button type="button" id="addPart" class="btn btn-success">
+              Add Part
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create</button>
+      </form>
+
+      <div id="resultContainer" class="mt-4"></div>
+    </div>
+
+    <!-- Include Bootstrap and jQuery JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+      // Add Part button click event
+      document.getElementById("addPart").addEventListener("click", function () {
+        const parts = document.getElementById("parts");
+        const part = document.querySelector(".part").cloneNode(true);
+        parts.appendChild(part);
+      });
+
+      // Remove Part button click event
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("removePart")) {
+          const part = event.target.closest(".part");
+          if (part) {
+            part.remove();
+          }
+        }
+      });
+
+      // Form submission event
+      document
+        .getElementById("maintenanceForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent form submission, you can handle it with JavaScript or send it to a backend.
+          const formData = new FormData(this);
+          console.log(formData); // You can process the form data here.
+        });
+
+      document
+        .getElementById("maintenanceForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent the default form submission.
+
+          // Collect form data
+          const formData = {
+            date: document.getElementById("date").value,
+            aircraftID: document.getElementById("aircraftID").value,
+            makeModel: document.getElementById("makeModel").value,
+            owner: document.getElementById("owner").value,
+            mechanic: document.getElementById("mechanic").value,
+            station: document.getElementById("station").value,
+            description: document.getElementById("description").value,
+            partHistory: [], // You can add part data here if needed.
+          };
+
+          // You can add code here to collect part data if required.
+
+          // Send the data to the server
+          fetch("http://localhost:3002/create-maintenance-record", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              document.getElementById("maintenanceForm").style.display = "none";
+              console.log(data); // Handle the response from the server.
+              const resultContainer =
+                document.getElementById("resultContainer");
+              let html = "<h2>Registered Aircraft Info</h2>";
+              for (const [key, value] of Object.entries(formData)) {
+                html += `<p>${key.toUpperCase()}: <strong>${value}</strong></p>`;
+              }
+              html += `<p>Link: <a href="${data.response.data.link}" target="_blank">${data.response.data.link}</a></p>`;
+              html += `<button id="add-new" class="btn btn-primary mt-3">Create another</button>`;
+              resultContainer.innerHTML = html;
+
+              document
+                .getElementById("add-new")
+                .addEventListener("click", () => {
+                  document.getElementById("resultContainer").style.display =
+                    "none";
+                  document.getElementById("maintenanceForm").style.display = "";
+                });
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
+        });
+    </script>
+  </body>
+</html>
