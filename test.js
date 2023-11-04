@@ -4,6 +4,7 @@ const { CryptoFactory, createContext } = require("sawtooth-sdk-js/signing");
 const { Secp256k1PrivateKey } = require("sawtooth-sdk-js/signing/secp256k1");
 const axios = require("axios");
 const protobuf = require("sawtooth-sdk-js/protobuf");
+const path = require("path"); 
 
 const privateKeyHexStr = createPrivateKey();
 const privateKey = new Secp256k1PrivateKey(
@@ -25,6 +26,11 @@ app.get("/health", (req, res) => {
   res.json({
     message: "Running",
   });
+});
+
+app.get("/", (req, res) => {
+  const indexPath = path.join(__dirname, "index.html");
+  res.sendFile(indexPath);
 });
 
 app.post("/create-maintenance-record", async (req, res) => {

@@ -23,6 +23,7 @@ services:
     depends_on:
       - validator
     entrypoint: settings-tp -vv -C tcp://validator:4004
+    stop_signal: SIGTERM
 
   intkey-tp-python:
     image: hyperledger/sawtooth-intkey-tp-python:chime
@@ -30,13 +31,7 @@ services:
     depends_on:
       - validator
     entrypoint: intkey-tp-python -vv -C tcp://validator:4004
-
-  xo-tp-python:
-    image: hyperledger/sawtooth-xo-tp-python:chime
-    container_name: sawtooth-xo-tp-python-default
-    depends_on:
-      - validator
-    entrypoint: xo-tp-python -vv -C tcp://validator:4004
+    stop_signal: SIGTERM
 
   validator:
     image: hyperledger/sawtooth-validator:chime
@@ -62,6 +57,7 @@ services:
           --bind network:tcp://eth0:8800 \
           --bind consensus:tcp://eth0:5050 \
         \""
+    stop_signal: SIGTERM
 
   devmode-engine:
     image: hyperledger/sawtooth-devmode-engine-rust:chime
@@ -69,6 +65,7 @@ services:
     depends_on:
       - validator
     entrypoint: devmode-engine-rust -C tcp://validator:5050
+    stop_signal: SIGTERM
 
   rest-api:
     image: hyperledger/sawtooth-rest-api:chime
@@ -78,6 +75,7 @@ services:
     depends_on:
       - validator
     entrypoint: sawtooth-rest-api -C tcp://validator:4004 --bind rest-api:8008
+    stop_signal: SIGTERM
 
   shell:
     image: hyperledger/sawtooth-shell:chime
@@ -88,3 +86,4 @@ services:
         sawtooth keygen && \
         tail -f /dev/null \
         \""
+    stop_signal: SIGTERM
