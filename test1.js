@@ -6,9 +6,25 @@ const { CryptoFactory, createContext } = require("sawtooth-sdk-js/signing");
 const { Secp256k1PrivateKey } = require("sawtooth-sdk-js/signing/secp256k1");
 const axios = require("axios");
 const protobuf = require("sawtooth-sdk-js/protobuf");
+<<<<<<< HEAD
 
 const privateKeyHexStr = createPrivateKey();
 
+=======
+const path = require("path"); 
+
+const express = require("express");
+const cors = require("cors");
+const app = express();
+
+const privateKeyHexStr = createPrivateKey();
+
+app.get("/", (req, res) => {
+  const indexPath = path.join(__dirname, "index.html");
+  res.sendFile(indexPath);
+});
+
+>>>>>>> 22e76aaebffb35da30b06cfbcdd8c39207e6aae3
 // create instance of private key w internal class
 const privateKey = new Secp256k1PrivateKey(
   Buffer.from(privateKeyHexStr, "hex")
@@ -23,7 +39,10 @@ const payload = "Test ME";
 const payloadBytes = Buffer.from(payload);
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 22e76aaebffb35da30b06cfbcdd8c39207e6aae3
 console.log({ batchListBytes })
 axios
   .post(
