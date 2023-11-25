@@ -16,6 +16,7 @@ app.get('/health', (req, res) => {
 })
 app.use('/auth', user)
 
+
 // server run
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on http://localhost${port}/health`)
